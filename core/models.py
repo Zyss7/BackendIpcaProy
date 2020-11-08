@@ -23,7 +23,7 @@ class Tarea(models.Model):
         db_table = 'MLN_Tareas'
         verbose_name = 'Tarea'
         verbose_name_plural = 'Tareas'
-        ordering = ("created_at",)
+        ordering = ("-created_at",)
 
 
 class Alumno(models.Model):

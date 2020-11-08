@@ -21,6 +21,7 @@ class DiscapacidadSerializer(serializers.ModelSerializer):
 class PersonaSerializer(serializers.ModelSerializer):
     # discapacidades = DiscapacidadSerializer(many=True)
     discapacidades = serializers.SerializerMethodField()
+    str = serializers.SerializerMethodField()
 
     class Meta:
         model = Persona
@@ -28,6 +29,9 @@ class PersonaSerializer(serializers.ModelSerializer):
 
     def get_discapacidades(self, obj: Persona):
         return [discapacidad.nombre for discapacidad in obj.discapacidades.all()]
+
+    def get_str(self, obj: Persona):
+        return obj.__str__()
 
 
 class AulaSerializer(serializers.ModelSerializer):
