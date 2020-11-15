@@ -1,7 +1,10 @@
 from django.db import models
 
-
 # Create your models here.
+AUTH_ESTADOS = {
+    'ACTIVO': 'A',
+    'INACTIVO': 'I'
+}
 
 
 class Tarea(models.Model):
@@ -24,6 +27,28 @@ class Tarea(models.Model):
         verbose_name = 'Tarea'
         verbose_name_plural = 'Tareas'
         ordering = ("-created_at",)
+
+
+'''
+TODO: CREAR UN CRON para eliminar las listas de reproduccion que llevan eliminadas mas de 3 semanas
+'''
+
+
+class ListaReproduccion(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    # TODO: validar el unique en back y front
+    titulo = models.CharField(max_length=150)
+    descripcion = models.TextField(null=True, blank=True)
+    videos = models.JSONField(null=True, blank=True)
+    alumnos = models.JSONField(null=True, blank=True)
+    creador = models.JSONField(null=True, blank=True)
+
+    auth_estado = models.CharField(max_length=10, default='A')
+
+    class Meta:
+        db_table = 'ListaReproduccion'
+        ordering = ("titulo",)
 
 
 class Alumno(models.Model):

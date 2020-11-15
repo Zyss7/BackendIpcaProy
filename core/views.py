@@ -1,14 +1,13 @@
 # Create your views here.
-from cffi import api
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from BackendIpcaProy.responses import CustomResponse
-from BackendIpcaProy.settings import pusher_client, beams_client
-from core.models import Tarea, Docente, Alumno
-from core.queries import is_docente_or_alumno
-from core.serializers import TareaSerializer, DocenteSerializer, AlumnoSerializer
+from BackendIpcaProy.settings import beams_client
+from core.models import Tarea, Docente, Alumno, ListaReproduccion, AUTH_ESTADOS
+from core.queries import is_docente_or_alumno, get_model_by
+from core.serializers import TareaSerializer, DocenteSerializer, AlumnoSerializer, ListaReproduccionSerializer
 
 
 @api_view(['POST'])
@@ -137,3 +136,81 @@ def get_tareas(request: Request):
                 'POR FAVOR VERIFIQUE LA IDENTIFICACION ENVIADA, NO SE HAN ENCONTRADO RESULTADOS')
 
     return CustomResponse.error(mensaje='NO SE HA ENVIADO UNA IDENTIFICACION')
+
+
+@api_view(['POST'])
+def crear_lista_reproduccion(request: Request):
+    lista_serializer = ListaReproduccionSerializer(data=request.data)
+    if lista_serializer.is_valid():
+        lista = lista_serializer.create(request.data)
+        lista.save()
+        return CustomResponse.success(ListaReproduccionSerializer(lista).data)
+    return CustomResponse.error('ENVIE INFORMACION VALIDA', extra_info=lista_serializer.errors)
+
+
+@api_view(['POST'])
+def get_lista_reproduccion_by_id(request: Request, id: int):
+    respuesta = get_model_by(
+        ListaReproduccion,
+        error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
+        serializer=ListaReproduccionSerializer,
+        response=True,
+        id=id,
+    )
+    return respuesta.get('response')
+
+
+@api_view(['POST'])
+def editar_lista_reproduccion_by_id(request: Request, id: int):
+    respuesta = get_model_by(
+        ListaReproduccion,
+        error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
+        serializer=ListaReproduccionSerializer,
+        response=True,
+        id=id,
+    )
+
+    if respuesta.get('has_error'):
+        return respuesta.get('response')
+    lista_serd = ListaReproduccionSerializer(data=request.data)
+
+    if lista_serd.is_valid():
+        lista: ListaReproduccion = respuesta.get('model')
+        lista_serialized: ListaReproduccionSerializer = respuesta.get('model_serialized')
+
+        lista_updated = lista_serialized.update(lista, request.data)
+        lista_updated.save()
+
+        return CustomResponse.success_message(ListaReproduccionSerializer(lista_updated).data)
+    return CustomResponse.error('LA INFORMACION ENVIADA NO ES VALIDA', extra_info=lista_serd.errors)
+
+
+@api_view(['POST'])
+def eliminar_lista_reproduccion_by_id(request: Request, id: int):
+    respuesta = get_model_by(
+        ListaReproduccion,
+        error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
+        serializer=ListaReproduccionSerializer,
+        response=True,
+        id=id,
+    )
+
+    if respuesta.get('has_error'):
+        return respuesta.get('response')
+
+    lista: ListaReproduccion = respuesta.get('model')
+    lista.auth_estado = AUTH_ESTADOS['INACTIVO']
+    lista.save()
+    return CustomResponse.success_message('SE HA ELIMINADO CORRECTAMENTE LA LISTA DE REPRODUCCION')
+
+
+@api_view(['POST'])
+def get_listas_reproduccion(request: Request):
+    queries = request.data.get('queries', None)
+
+    if queries is None or queries is not None and queries.get('auth_estado') is None:
+        queries = dict(auth_estado='A')
+
+    listas = ListaReproduccion.objects.filter(**queries)
+    listas_serialized = ListaReproduccionSerializer(listas, many=True)
+    return CustomResponse.success(listas_serialized.data)

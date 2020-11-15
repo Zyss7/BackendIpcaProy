@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ALL_FIELDS
 
-from core.models import Tarea, Docente, Persona, Aula, Alumno, Discapacidad
+from core.models import Tarea, Docente, Persona, Aula, Alumno, Discapacidad, ListaReproduccion
 
 
 class TareaSerializer(serializers.ModelSerializer):
@@ -58,4 +58,10 @@ class AlumnoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Alumno
+        fields = ALL_FIELDS
+
+
+class ListaReproduccionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListaReproduccion
         fields = ALL_FIELDS

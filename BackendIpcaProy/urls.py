@@ -18,12 +18,21 @@ from django.urls import path
 
 from core import views
 
+base_url = 'api/v1/'
+
 urlpatterns = [
     # path('admin/', admin.site.urls),
-    path('api/v1/create-tarea', views.create_tarea),
-    path('api/v1/tareas/<int:id>', views.tarea_by_id),
-    path('api/v1/get-info-usuario', views.get_informacion_usuario),
-    path('api/v1/get-tareas', views.get_tareas),
-    path('api/v1/notificar-tarea', views.notificar_tarea),
-    path('api/v1/get-user-id', views.get_user_id),
+    path(f'{base_url}create-tarea', views.create_tarea),
+    path(f'{base_url}tareas/<int:id>', views.tarea_by_id),
+    path(f'{base_url}get-info-usuario', views.get_informacion_usuario),
+    path(f'{base_url}get-tareas', views.get_tareas),
+    path(f'{base_url}notificar-tarea', views.notificar_tarea),
+    path(f'{base_url}get-user-id', views.get_user_id),
+
+    # lista de reproduccion
+    path(f'{base_url}crear-lista-reproduccion', views.crear_lista_reproduccion),
+    path(f'{base_url}editar-lista-reproduccion-by-id/<int:id>', views.editar_lista_reproduccion_by_id),
+    path(f'{base_url}eliminar-lista-reproduccion-by-id/<int:id>', views.eliminar_lista_reproduccion_by_id),
+    path(f'{base_url}get-lista-reproduccion-by-id/<int:id>', views.get_lista_reproduccion_by_id),
+    path(f'{base_url}get-listas-reproduccion', views.get_listas_reproduccion),
 ]

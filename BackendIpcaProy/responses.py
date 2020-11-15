@@ -13,3 +13,8 @@ class CustomResponse:
     def success(data=None, extra_info=None):
         context = dict(transaccion=True, data=data, extra_info=extra_info)
         return Response(context)
+
+    @staticmethod
+    def success_message(message, extra_info=None):
+        context = dict(transaccion=True, mensaje=message, extra_info=extra_info)
+        return Response(context)
