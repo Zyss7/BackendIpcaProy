@@ -1,7 +1,7 @@
 from django.db.models import Model
 
 from BackendIpcaProy.responses import CustomResponse
-from core.models import Alumno, Docente
+from core.models import Alumno, Personal, FuncionPersonal
 
 
 def is_docente_or_alumno(identificacion):
@@ -14,7 +14,11 @@ def is_docente_or_alumno(identificacion):
         )
 
     alumno = Alumno.objects.filter(persona__identificacion=identificacion).first()
-    docente = Docente.objects.filter(persona__identificacion=identificacion).first()
+
+    docente = Personal.objects.filter(
+        persona__identificacion=identificacion,
+        funcion__codigo=FuncionPersonal.DOCENTE
+    ).first()
 
     if alumno is None and docente is None:
         error_message = "NO SE HAN ENCONTRADO RESULTADOS"

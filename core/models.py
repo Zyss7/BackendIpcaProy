@@ -51,20 +51,133 @@ class ListaReproduccion(models.Model):
         ordering = ("titulo",)
 
 
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    auth_estado = models.CharField(max_length=10, default='A')
+
+    class Meta:
+        abstract = True
+
+    def __to_json__(self):
+        obj_json = self.__dict__
+        obj_json['created_at'] = self.created_at.isoformat()
+        obj_json['updated_at'] = self.updated_at.isoformat()
+        obj_json.pop('_state')
+        return obj_json
+
+
+class FuncionPersonal(BaseModel):
+    DOCENTE: str = 'docente'
+    nombre = models.CharField(max_length=50)
+    codigo = models.CharField(max_length=50)
+    descripcion = models.TextField()
+
+    class Meta:
+        db_table = 'RolesPersonal'
+        managed = False
+
+
+class Discapacidad(BaseModel):
+    nombre = models.CharField(max_length=255)
+    descripcion = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'Discapacidades'
+        managed = False
+
+
+class Persona(BaseModel):
+    identificacion = models.CharField(max_length=30, unique=True)
+    tipo_identificacion = models.CharField(max_length=20, )
+    primer_nombre = models.CharField(max_length=30)
+    segundo_nombre = models.CharField(max_length=30)
+    primer_apellido = models.CharField(max_length=30)
+    segundo_apellido = models.CharField(max_length=30)
+
+    pais_nacimiento = models.CharField(max_length=30, null=True, blank=True)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+
+    genero = models.CharField(max_length=10, )
+    estado_civil = models.CharField(max_length=20, null=True, blank=True)
+
+    tiene_discapacidad = models.CharField(max_length=10, default="NO")
+    discapacidades = models.ManyToManyField(Discapacidad, blank=True)
+    carnet_conadis = models.CharField(max_length=50, default='NO REGISTRA')
+
+    porcentaje_discapacidad = models.PositiveSmallIntegerField(default=0)
+    etnia = models.CharField(max_length=30, null=True, blank=True)
+
+    tipo_sangre = models.CharField(max_length=30, null=True, blank=True)
+
+    pais_residencia = models.CharField(max_length=150, null=True, blank=True)
+    provincia_residencia = models.CharField(max_length=150, null=True, blank=True)
+    canton_residencia = models.CharField(max_length=150, null=True, blank=True)
+    parroquia_residencia = models.CharField(max_length=150, null=True, blank=True)
+    direccion_domiciliaria = models.TextField(null=True, blank=True)
+
+    telefono = models.CharField(max_length=20, null=True, blank=True)
+    celular_uno = models.CharField(max_length=20, null=True, blank=True)
+    celular_dos = models.CharField(max_length=20, null=True, blank=True)
+    correo = models.CharField(max_length=30, null=True, blank=True)
+
+    foto = models.URLField(null=True, blank=True)
+    extras = models.JSONField(null=True, blank=True)
+
+    def full_name(self):
+        return f'{self.primer_nombre} {self.primer_apellido}'
+
+    def __str__(self):
+        return f'{self.identificacion} {self.full_name()}'
+
+    class Meta:
+        db_table = 'Personas'
+        managed = False
+
+
+class Personal(BaseModel):
+    persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
+    funcion = models.ForeignKey(FuncionPersonal, on_delete=models.CASCADE)
+    info = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'Personal'
+        managed = False
+
+    def full_name(self):
+        return self.persona.full_name()
+
+    def __str__(self):
+        return self.persona.__str__()
+
+
 class Alumno(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    padre = models.JSONField(blank=True, null=True)
-    madre = models.JSONField(blank=True, null=True)
-    representante = models.JSONField(blank=True, null=True)
-    contacto_emergencia = models.JSONField(blank=True, null=True)
-    observaciones = models.TextField(blank=True, null=True)
-    persona = models.ForeignKey('Persona', models.DO_NOTHING)
+    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, related_name='alumno')
+
+    padre = models.JSONField(null=True, blank=True)
+
+    madre = models.JSONField(null=True, blank=True)
+
+    representante = models.JSONField(null=True, blank=True)
+
+    contacto_emergencia = models.JSONField(null=True, blank=True)
+
+    observaciones = models.TextField(null=True, blank=True)
+
+    historia_clinica = models.CharField(max_length=20, null=True, blank=True)
+
+    trastornos_asociados = models.TextField(null=True, blank=True)
+
+    grado_dependencia = models.TextField(null=True, blank=True)
+
+    bono = models.CharField(max_length=50, default="Ninguno")
+    tipo_bono = models.CharField(max_length=50)
+    afiliacion_iess = models.CharField(max_length=10)
+    quintil_pobreza = models.CharField(max_length=10)
 
     class Meta:
         managed = False
-        db_table = 'Alumno'
+        db_table = 'Alumnos'
 
     def mapper(self):
         persona = self.persona
@@ -80,43 +193,19 @@ class Alumno(models.Model):
         )
 
 
-class AlumnoAula(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    nota_final = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
-    numero_faltas = models.SmallIntegerField()
-    tratamiento = models.TextField()
-    diagnostico = models.TextField()
-    diagnostico_final = models.TextField(blank=True, null=True)
-    aporte_voluntario = models.DecimalField(max_digits=6, decimal_places=2)
-    alumno = models.ForeignKey(Alumno, models.DO_NOTHING)
-    aula = models.ForeignKey('Aula', models.DO_NOTHING)
-    matricula = models.TextField()
-    faltas = models.JSONField()
-    numero_matricula = models.CharField(max_length=155)
-
-    class Meta:
-        managed = False
-        db_table = 'AlumnoAula'
-
-
 class Aula(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
     nombre = models.CharField(max_length=50)
-    capacidad = models.SmallIntegerField()
-    grado = models.SmallIntegerField()
-    observaciones = models.TextField(blank=True, null=True)
-    periodo = models.ForeignKey('Periodolectivo', models.DO_NOTHING)
-    jornada = models.CharField(max_length=50)
-    docentes = models.ManyToManyField('Docente')
+    capacidad = models.PositiveSmallIntegerField()
+    grado = models.PositiveSmallIntegerField()
     alumnos = models.ManyToManyField(Alumno, through='AlumnoAula', blank=True)
+    docentes = models.ManyToManyField(Personal)
+    periodo = models.ForeignKey('PeriodoLectivo', on_delete=models.CASCADE)
+    observaciones = models.TextField(null=True, blank=True)
+    jornada = models.CharField(max_length=50, default='MATUTINA')
 
     class Meta:
         managed = False
-        db_table = 'Aula'
+        db_table = 'Aulas'
 
     def mapper(self):
         return dict(
@@ -130,81 +219,35 @@ class Aula(models.Model):
         )
 
 
-class Discapacidad(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(blank=True, null=True)
-    porcentaje = models.SmallIntegerField(blank=True, null=True)
+class AlumnoAula(BaseModel):
+    diagnostico_clinico = models.TextField(null=True, blank=True)
+
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE)
+    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE)
+    numero_matricula = models.CharField(max_length=155, default='')
+    matricula = models.TextField(null=True, blank=True)
+    aporte_voluntario = models.DecimalField(decimal_places=2, max_digits=6)
+    tratamiento = models.TextField(null=True, blank=True)
+    info_faltas = models.JSONField(null=True, blank=True)
+    diagnostico_final = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
-        db_table = 'Discapacidad'
+        db_table = 'AlumnoAulas'
 
 
-class Docente(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    codigo = models.CharField(max_length=50, blank=True, null=True)
-    tipo_titulo = models.CharField(max_length=120)
-    titulo = models.CharField(max_length=255)
-    observaciones = models.TextField(blank=True, null=True)
-    persona = models.ForeignKey('Persona', models.DO_NOTHING)
-
-    class Meta:
-        managed = False
-        db_table = 'Docente'
-
-
-class Materia(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    nombre = models.CharField(max_length=50)
-    codigo = models.CharField(max_length=20)
-    grado = models.SmallIntegerField()
-    horas_presencial = models.SmallIntegerField()
-    descripcion = models.TextField(blank=True, null=True)
-    objetivo = models.TextField(blank=True, null=True)
-    objetivo_especifico = models.TextField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'Materia'
-
-
-class Notamateria(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    valor = models.DecimalField(max_digits=6, decimal_places=2)
-    observaciones = models.TextField(blank=True, null=True)
-    materia = models.JSONField()
-    notas = models.JSONField()
-    alumno_aula = models.ForeignKey(AlumnoAula, models.DO_NOTHING)
-
-    class Meta:
-        managed = False
-        db_table = 'NotaMateri'
-
-
-class Periodolectivo(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
+class PeriodoLectivo(BaseModel):
     nombre = models.CharField(max_length=155)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
     estado = models.CharField(max_length=30)
     fecha_fin_clases = models.DateField()
-    observaciones = models.TextField(blank=True, null=True)
-    responsables = models.JSONField(blank=True, null=True)
+    observaciones = models.TextField(null=True, blank=True)
+    responsables = models.JSONField(null=True, blank=True)
 
     class Meta:
         managed = False
-        db_table = 'PeriodoLectivo'
+        db_table = 'PeriodoLectivos'
 
     def mapper(self):
         return dict(
@@ -213,41 +256,3 @@ class Periodolectivo(models.Model):
             fecha_fin=self.fecha_fin,
             estado=self.estado,
         )
-
-
-class Persona(models.Model):
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    auth_estado = models.CharField(max_length=10)
-    identificacion = models.CharField(unique=True, max_length=30)
-    tipo_identificacion = models.CharField(max_length=20)
-    primer_nombre = models.CharField(max_length=30)
-    segundo_nombre = models.CharField(max_length=30)
-    primer_apellido = models.CharField(max_length=30)
-    segundo_apellido = models.CharField(max_length=30)
-    genero = models.CharField(max_length=10)
-    sexo = models.CharField(max_length=10)
-    foto = models.CharField(max_length=200, blank=True, null=True)
-    tipo_sangre = models.CharField(max_length=30)
-    fecha_nacimiento = models.DateField(blank=True, null=True)
-    calle_principal = models.CharField(max_length=150, blank=True, null=True)
-    calle_secundaria = models.CharField(max_length=150, blank=True, null=True)
-    lugar_referencia = models.CharField(max_length=150, blank=True, null=True)
-    numero_casa = models.CharField(max_length=30, blank=True, null=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    celular = models.CharField(max_length=20, blank=True, null=True)
-    correo = models.CharField(max_length=30, blank=True, null=True)
-    tiene_discapacidad = models.CharField(max_length=10)
-    carnet_conadis = models.CharField(max_length=50)
-    porcentaje_discapacidad = models.SmallIntegerField()
-    ocupacion = models.CharField(max_length=120, blank=True, null=True)
-    nivel_formacion = models.CharField(max_length=255, blank=True, null=True)
-    extras = models.JSONField(blank=True, null=True)
-    discapacidades = models.ManyToManyField(Discapacidad, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = 'Persona'
-
-    def __str__(self):
-        return f"{self.identificacion} {self.primer_apellido} {self.primer_nombre}"

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from BackendIpcaProy.responses import CustomResponse
 from BackendIpcaProy.settings import beams_client
-from core.models import Tarea, Docente, Alumno, ListaReproduccion, AUTH_ESTADOS
+from core.models import Tarea, Personal, Alumno, ListaReproduccion, AUTH_ESTADOS
 from core.queries import is_docente_or_alumno, get_model_by
 from core.serializers import TareaSerializer, DocenteSerializer, AlumnoSerializer, ListaReproduccionSerializer
 
@@ -107,7 +107,7 @@ def get_tareas(request: Request):
 
     if identificacion is not None:
         alumno = Alumno.objects.filter(persona__identificacion=identificacion).first()
-        docente = Docente.objects.filter(persona__identificacion=identificacion).first()
+        docente = Personal.objects.filter(persona__identificacion=identificacion).first()
 
         if alumno or docente is not None:
 

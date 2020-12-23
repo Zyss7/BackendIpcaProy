@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ALL_FIELDS
 
-from core.models import Tarea, Docente, Persona, Aula, Alumno, Discapacidad, ListaReproduccion
+from core.models import Tarea, Personal, Persona, Aula, Alumno, Discapacidad, ListaReproduccion
 
 
 class TareaSerializer(serializers.ModelSerializer):
@@ -45,12 +45,13 @@ class DocenteSerializer(serializers.ModelSerializer):
     aulas = serializers.SerializerMethodField()
 
     class Meta:
-        model = Docente
+        model = Personal
         fields = ALL_FIELDS
 
     def get_aulas(self, obj):
-        aulas = Aula.objects.filter(docentes__in=[obj], periodo__estado='ABIERTO')
-        return [aula.mapper() for aula in aulas]
+        # aulas = Aula.objects.filter(docentes__in=[obj], periodo__estado='ABIERTO')
+        # return [aula.mapper() for aula in aulas]
+        return []
 
 
 class AlumnoSerializer(serializers.ModelSerializer):
