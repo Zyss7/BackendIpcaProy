@@ -137,8 +137,10 @@ class Persona(BaseModel):
 
 class Personal(BaseModel):
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
-    funcion = models.ForeignKey(FuncionPersonal, on_delete=models.CASCADE)
-    info = models.JSONField(null=True, blank=True)
+    funciones = models.ManyToManyField(FuncionPersonal, blank=True)
+    titulo = models.CharField(max_length=150)
+    tipo_titulo = models.CharField(max_length=150)
+    area_de_trabajo = models.TextField(null=True, blank=True, default='NO REGISTRA')
 
     class Meta:
         db_table = 'Personal'
@@ -237,13 +239,18 @@ class AlumnoAula(BaseModel):
 
 
 class PeriodoLectivo(BaseModel):
+    class EstadosPeriodo(models.IntegerChoices):
+        CERRADO = 0
+        ABIERTO = 1
+
     nombre = models.CharField(max_length=155)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    estado = models.CharField(max_length=30)
+    estado = models.PositiveSmallIntegerField(default=1, choices=EstadosPeriodo.choices)
     fecha_fin_clases = models.DateField()
     observaciones = models.TextField(null=True, blank=True)
-    responsables = models.JSONField(null=True, blank=True)
+    coordinador = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='coordinador')
+    sub_coordinador = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='sub_coordinador')
 
     class Meta:
         managed = False

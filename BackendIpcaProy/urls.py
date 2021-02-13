@@ -28,6 +28,7 @@ urlpatterns = [
     path(f'{base_url}get-tareas', views.get_tareas),
     path(f'{base_url}notificar-tarea', views.notificar_tarea),
     path(f'{base_url}get-user-id', views.get_user_id),
+    path(f'{base_url}delete-tarea/<int:id>', views.delete_tarea),
 
     # lista de reproduccion
     path(f'{base_url}crear-lista-reproduccion', views.crear_lista_reproduccion),

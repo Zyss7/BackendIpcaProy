@@ -101,7 +101,7 @@ def get_informacion_usuario(request: Request):
     return CustomResponse.success(data)
 
 
-@api_view(['POST'])
+@api_view(['POST'], )
 def get_tareas(request: Request):
     identificacion = request.data.get('identificacion', None)
 
@@ -110,13 +110,15 @@ def get_tareas(request: Request):
         docente = Personal.objects.filter(persona__identificacion=identificacion).first()
 
         if alumno or docente is not None:
-
+            serializer = TareaSerializer
             if alumno is not None:
                 tareas = Tarea.objects.filter(alumnos__contains=[
                     {
                         'identificacion': identificacion
                     }
                 ])
+
+
 
             else:
                 tareas = Tarea.objects.filter(docente__contains={
@@ -128,7 +130,7 @@ def get_tareas(request: Request):
             if estado_envio is not None:
                 tareas = tareas.filter(estado_envio=estado_envio)
 
-            tarea_serialized = TareaSerializer(tareas, many=True)
+            tarea_serialized = serializer(tareas, many=True)
             return CustomResponse.success(tarea_serialized.data)
 
         else:
@@ -136,6 +138,14 @@ def get_tareas(request: Request):
                 'POR FAVOR VERIFIQUE LA IDENTIFICACION ENVIADA, NO SE HAN ENCONTRADO RESULTADOS')
 
     return CustomResponse.error(mensaje='NO SE HA ENVIADO UNA IDENTIFICACION')
+
+
+@api_view(['DELETE'])
+def delete_tarea(request: Request, id: int):
+    tarea = Tarea.objects.filter(pk=id).first()
+    if tarea is not None:
+        tarea.delete()
+    return CustomResponse.success('SE HA ELIMINADO CORRECTAMENTE')
 
 
 @api_view(['POST'])

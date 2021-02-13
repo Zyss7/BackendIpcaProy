@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ALL_FIELDS
 
-from core.models import Tarea, Personal, Persona, Aula, Alumno, Discapacidad, ListaReproduccion
+from core.models import Tarea, Personal, Persona, Aula, Alumno, Discapacidad, ListaReproduccion, PeriodoLectivo
 
 
 class TareaSerializer(serializers.ModelSerializer):
@@ -10,6 +10,23 @@ class TareaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tarea
         fields = ALL_FIELDS
+
+
+class TareaAlumnoSerializer(serializers.ModelSerializer):
+    estado = serializers.SerializerMethodField(read_only=True)
+    show = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Tarea
+        fields = ALL_FIELDS
+        identificacion = ''
+
+    def get_estado(self, obj: Tarea):
+        print(self)
+        return 'PENDIENTE'
+
+    def get_show(self, obj: Tarea):
+        return False
 
 
 class DiscapacidadSerializer(serializers.ModelSerializer):
@@ -49,9 +66,9 @@ class DocenteSerializer(serializers.ModelSerializer):
         fields = ALL_FIELDS
 
     def get_aulas(self, obj):
-        # aulas = Aula.objects.filter(docentes__in=[obj], periodo__estado='ABIERTO')
-        # return [aula.mapper() for aula in aulas]
-        return []
+        aulas = Aula.objects.filter(docentes__in=[obj], periodo__estado=PeriodoLectivo.EstadosPeriodo.ABIERTO.value)
+        return [aula.mapper() for aula in aulas]
+        # return []
 
 
 class AlumnoSerializer(serializers.ModelSerializer):

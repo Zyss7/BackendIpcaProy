@@ -1,5 +1,3 @@
-from django.db.models import Model
-
 from BackendIpcaProy.responses import CustomResponse
 from core.models import Alumno, Personal, FuncionPersonal
 
@@ -17,7 +15,7 @@ def is_docente_or_alumno(identificacion):
 
     docente = Personal.objects.filter(
         persona__identificacion=identificacion,
-        funcion__codigo=FuncionPersonal.DOCENTE
+        funciones__codigo=FuncionPersonal.DOCENTE
     ).first()
 
     if alumno is None and docente is None:
