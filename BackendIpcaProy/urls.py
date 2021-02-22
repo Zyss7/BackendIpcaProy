@@ -14,7 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 # from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.views.decorators.csrf import csrf_exempt
 
 from core import views
 
@@ -22,12 +23,11 @@ base_url = 'api/v1/'
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
+    path('webpush/', include('webpush.urls')),
     path(f'{base_url}create-tarea', views.create_tarea),
     path(f'{base_url}tareas/<int:id>', views.tarea_by_id),
     path(f'{base_url}get-info-usuario', views.get_informacion_usuario),
     path(f'{base_url}get-tareas', views.get_tareas),
-    path(f'{base_url}notificar-tarea', views.notificar_tarea),
-    path(f'{base_url}get-user-id', views.get_user_id),
     path(f'{base_url}delete-tarea/<int:id>', views.delete_tarea),
 
     # lista de reproduccion
@@ -36,4 +36,14 @@ urlpatterns = [
     path(f'{base_url}eliminar-lista-reproduccion-by-id/<int:id>', views.eliminar_lista_reproduccion_by_id),
     path(f'{base_url}get-lista-reproduccion-by-id/<int:id>', views.get_lista_reproduccion_by_id),
     path(f'{base_url}get-listas-reproduccion', views.get_listas_reproduccion),
+
+    # text-to-speach
+    path(f'{base_url}text-to-speach', views.text_to_speach),
+
+    # login
+    path(f'{base_url}login', views.login),
+    path(f'{base_url}logout', csrf_exempt(views.logout)),
+
+    # push-notifications
+    path(f'{base_url}send-push-notification', csrf_exempt(views.send_push_notification)),
 ]

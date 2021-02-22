@@ -1,3 +1,5 @@
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
 # Create your models here.
@@ -263,3 +265,24 @@ class PeriodoLectivo(BaseModel):
             fecha_fin=self.fecha_fin,
             estado=self.estado,
         )
+
+
+class Usuario(PermissionsMixin, AbstractBaseUser, BaseModel):
+    username = models.CharField(max_length=30, unique=True)
+    is_staff = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    email = models.EmailField(null=True, blank=True)
+    first_name = models.CharField(default="NO REGISTRA", null=True, max_length=150)
+    last_name = models.CharField(default="NO REGISTRA", null=True, max_length=150)
+
+    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, null=True)
+
+    USERNAME_FIELD = "username"
+    EMAIL_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = BaseUserManager()
+
+    class Meta:
+        db_table = 'Usuario'
+        managed = False

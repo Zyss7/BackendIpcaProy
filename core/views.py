@@ -1,17 +1,28 @@
 # Create your views here.
+import base64
+import json
+from io import BytesIO
+
+from django.contrib.auth import authenticate
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from gtts import gTTS
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
+from webpush.models import PushInformation, Group, SubscriptionInfo
 
-from BackendIpcaProy.responses import CustomResponse
-from BackendIpcaProy.settings import beams_client
-from core.models import Tarea, Personal, Alumno, ListaReproduccion, AUTH_ESTADOS
-from core.queries import is_docente_or_alumno, get_model_by
-from core.serializers import TareaSerializer, DocenteSerializer, AlumnoSerializer, ListaReproduccionSerializer
+from BackendIpcaProy.responses import CustomResponse, is_authenticated
+
+from core.models import Tarea, Personal, Alumno, ListaReproduccion, AUTH_ESTADOS, Usuario
+from core.queries import is_docente_or_alumno, get_model_by, UsuarioQueries, send_notification
+from core.serializers import TareaSerializer, ListaReproduccionSerializer
 
 
 @api_view(['POST'])
-def create_tarea(request: Request):
+@is_authenticated
+def create_tarea(request: Request, *args, **kwargs):
     tarea_serializer = TareaSerializer(data=request.data)
     if tarea_serializer.is_valid():
         tarea = tarea_serializer.create(request.data)
@@ -20,48 +31,9 @@ def create_tarea(request: Request):
     return CustomResponse.error('ENVIE INFORMACION VALIDA')
 
 
-@api_view(['POST'])
-def notificar_tarea(request):
-    response = beams_client.publish_to_users(
-        user_ids=['0.5103457234956086', '0.840668084257248'],
-        publish_body={
-            'web': {
-                'notification': {
-                    'title': 'Tarea',
-                    'body': 'Tienes una tarea nueva por realizar!',
-                    'deep_link': 'https://www.pusher.com',
-                },
-            },
-        },
-    )
-    ''''
-    response = beams_client.publish_to_interests(
-        
-        interests=['hello'],
-        
-        publish_body={
-            'web': {
-                'notification': {
-                    'title': 'Tarea',
-                    'body': 'Tienes una tarea nueva por realizar!',
-                    'deep_link': 'https://www.pusher.com',
-                },
-            },
-        },
-    )
-    '''
-    return CustomResponse.success(response)
-
-
-@api_view(['GET'])
-def get_user_id(request: Request):
-    user_id = request.query_params.get('user_id')
-    beams_token = beams_client.generate_token(user_id)
-    return Response(beams_token)
-
-
 @api_view(['GET', 'PUT'])
-def tarea_by_id(request: Request, id):
+@is_authenticated
+def tarea_by_id(request: Request, id, *args, **kwargs):
     if request.method == 'GET':
         tarea = Tarea.objects.filter(pk=id).first()
         tarea_serialized = TareaSerializer(tarea)
@@ -75,36 +47,14 @@ def tarea_by_id(request: Request, id):
 
 
 @api_view(['POST'])
-def get_informacion_usuario(request: Request):
-    identificacion = request.data.get('identificacion', None)
-
-    data = is_docente_or_alumno(identificacion)
-
-    if data.get('error', None) is not None:
-        return data.get('response_error')
-
-    rol = data.get('rol')
-    data_docente_alumno = data.pop('data')
-
-    if rol == "ALUMNO":
-        alumno_serialized = AlumnoSerializer(data_docente_alumno)
-        data['is_docente'] = False
-        data['is_alumno'] = True
-        data.update(alumno_serialized.data)
-
-    else:
-        data['is_docente'] = True
-        data['is_alumno'] = False
-        docente_serialized = DocenteSerializer(data_docente_alumno)
-        data.update(docente_serialized.data)
-
-    return CustomResponse.success(data)
+@is_authenticated
+def get_informacion_usuario(request: Request, identificacion, *args, **kwargs):
+    return UsuarioQueries.get_info_usuario_response(identificacion)
 
 
-@api_view(['POST'], )
-def get_tareas(request: Request):
-    identificacion = request.data.get('identificacion', None)
-
+@api_view(['POST'])
+@is_authenticated
+def get_tareas(request, identificacion, *args, **kwargs):
     if identificacion is not None:
         alumno = Alumno.objects.filter(persona__identificacion=identificacion).first()
         docente = Personal.objects.filter(persona__identificacion=identificacion).first()
@@ -117,8 +67,6 @@ def get_tareas(request: Request):
                         'identificacion': identificacion
                     }
                 ])
-
-
 
             else:
                 tareas = Tarea.objects.filter(docente__contains={
@@ -141,7 +89,8 @@ def get_tareas(request: Request):
 
 
 @api_view(['DELETE'])
-def delete_tarea(request: Request, id: int):
+@is_authenticated
+def delete_tarea(request: Request, id: int, *args, **kwargs):
     tarea = Tarea.objects.filter(pk=id).first()
     if tarea is not None:
         tarea.delete()
@@ -149,6 +98,7 @@ def delete_tarea(request: Request, id: int):
 
 
 @api_view(['POST'])
+@is_authenticated
 def crear_lista_reproduccion(request: Request):
     lista_serializer = ListaReproduccionSerializer(data=request.data)
     if lista_serializer.is_valid():
@@ -159,7 +109,8 @@ def crear_lista_reproduccion(request: Request):
 
 
 @api_view(['POST'])
-def get_lista_reproduccion_by_id(request: Request, id: int):
+@is_authenticated
+def get_lista_reproduccion_by_id(request: Request, id: int, *args, **kwargs):
     respuesta = get_model_by(
         ListaReproduccion,
         error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
@@ -171,7 +122,8 @@ def get_lista_reproduccion_by_id(request: Request, id: int):
 
 
 @api_view(['POST'])
-def editar_lista_reproduccion_by_id(request: Request, id: int):
+@is_authenticated
+def editar_lista_reproduccion_by_id(request: Request, id: int, *args, **kwargs):
     respuesta = get_model_by(
         ListaReproduccion,
         error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
@@ -196,7 +148,8 @@ def editar_lista_reproduccion_by_id(request: Request, id: int):
 
 
 @api_view(['POST'])
-def eliminar_lista_reproduccion_by_id(request: Request, id: int):
+@is_authenticated
+def eliminar_lista_reproduccion_by_id(request: Request, id: int, *args, **kwargs):
     respuesta = get_model_by(
         ListaReproduccion,
         error_message='NO SE HA ENCONTRADO UNA LISTA DE REPRODUCCION CON ESE ID',
@@ -215,7 +168,8 @@ def eliminar_lista_reproduccion_by_id(request: Request, id: int):
 
 
 @api_view(['POST'])
-def get_listas_reproduccion(request: Request):
+@is_authenticated
+def get_listas_reproduccion(request: Request, *args, **kwargs):
     queries = request.data.get('queries', None)
 
     if queries is None or queries is not None and queries.get('auth_estado') is None:
@@ -224,3 +178,108 @@ def get_listas_reproduccion(request: Request):
     listas = ListaReproduccion.objects.filter(**queries)
     listas_serialized = ListaReproduccionSerializer(listas, many=True)
     return CustomResponse.success(listas_serialized.data)
+
+
+@api_view(['POST', 'GET'])
+@is_authenticated
+def text_to_speach(request: Request, *args, **kwargs):
+    data: dict = request.data
+    lang = data.get('lang', 'es')
+    tts = gTTS(data.get('text', ''), lang=lang)
+    mp3_fp = BytesIO()
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    return FileResponse(mp3_fp, as_attachment=True, content_type='audio/mp3', filename='file.mp3')
+
+
+@api_view(['POST'])
+@csrf_exempt
+def login(request: Request, *args, **kwargs):
+    data: dict = request.data
+    message_bytes = base64.b64decode(data.get('password', ''))
+    password = message_bytes.decode('utf-8')
+    password = password.replace('"', "")
+    user: Usuario = authenticate(username=data.get('username', ''), password=password)
+    if user is not None:
+
+        group = Group.objects.get(name="MLN")
+        # push = PushInformation.objects.filter(user=user, group=group, ).first()
+        #
+        # if push is None:
+        p256dh = data.get('p_256dh')
+        subscription_information = SubscriptionInfo(
+            browser=data.get('browser'),
+            endpoint=data.get('endpoint'),
+            auth=data.get('auth'),
+            p256dh=p256dh
+        )
+        subscription_information.save()
+
+        push_info = PushInformation(user=user, group=group, subscription=subscription_information)
+        push_info.save()
+
+        identificacion = user.persona.identificacion
+        result = is_docente_or_alumno(
+            identificacion,
+            error_msg="No se han encontrado resultados de algun usuario DOCENTE o ALUMNO con esas credenciales"
+        )
+
+        if result.get('has_error', False):
+            return result.get('response_error')
+        return UsuarioQueries.get_info_usuario_response(identificacion)
+
+    return CustomResponse.error('No se ha encontrado ningun usuario con esas credenciales')
+
+
+@api_view(['POST'])
+@is_authenticated
+def send_push_notification(request, *args, **kwargs):
+    try:
+        body = request.body
+        data = json.loads(body)
+        if 'head' not in data or 'body' not in data or 'id' not in data:
+            return JsonResponse(status=400, data={"message": "Invalid data format"})
+
+        user_id = data['id']
+        user = get_object_or_404(Usuario, pk=user_id)
+        payload = {
+            'head': data['head'],
+            'body': data['body'],
+            'icon': data.get('icon', None),
+            'url': data.get('url', None)
+        }
+        push_info = PushInformation.objects.filter(
+            user=user,
+            group__name="MLN"
+        ).first()
+        payload = json.dumps(payload)
+        send_notification(subscription=push_info.subscription, payload=payload, ttl=1000)
+        return Response({"message": "Web push successful"})
+    except TypeError as e:
+        return Response({"message": "An error occurred"})
+
+
+@api_view(['POST'])
+def logout(request: Request, *args, **kwargs):
+    try:
+        data: dict = request.data
+
+        username = data.get('username', None)
+        push_info: dict = data.get('push_info', None)
+
+        if username is not None and push_info is not None:
+            subscription = SubscriptionInfo.objects.filter(
+                browser=push_info.get("browser", None),
+                endpoint=push_info.get("endpoint", None),
+                auth=push_info.get("auth", None),
+                p256dh=push_info.get("p_256dh", None)
+            ).first()
+            push_info = PushInformation.objects.filter(
+                user=Usuario.objects.get(username=username),
+                subscription=subscription
+            )
+            push_info.delete()
+            subscription.delete()
+            return CustomResponse.success()
+    except:
+        return CustomResponse.error('Ha ocurrido un problema al momento de realizar el logout')

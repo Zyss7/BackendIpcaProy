@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 import os
 from pathlib import Path
+
 import pusher
 from pusher_push_notifications import PushNotifications
 
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core.apps.CoreConfig',
 
+    'webpush',
     'django_cleanup',
     'corsheaders',
     'rest_framework',
@@ -52,18 +54,28 @@ INSTALLED_APPS = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:4500',
+]  # If this is used, then not need to use `CORS_ORIGIN_ALLOW_ALL = True`
+CORS_ORIGIN_REGEX_WHITELIST = [
+    'http://localhost:4500',
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.BrokenLinkEmailsMiddleware',
+
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    # 'django.middleware.gzip.GZipMiddleware',
 ]
 
 ROOT_URLCONF = 'BackendIpcaProy.urls'
@@ -84,13 +96,16 @@ REST_FRAMEWORK = {
         'djangorestframework_camel_case.parser.CamelCaseJSONParser',
         # Any other parsers
     ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication'
+    ),
 }
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -178,15 +193,10 @@ STATIC_URL = '/static/'
 # AUTH_USER_MODEL = 'core.Usuario'
 
 
-pusher_client = pusher.Pusher(
-    app_id='1084473',
-    key='92e70303efd5bbd454ad',
-    secret='c2909cfda3895deaa448',
-    cluster='us2',
-    ssl=True
-)
+AUTH_USER_MODEL = 'core.Usuario'
 
-beams_client = PushNotifications(
-    instance_id='d3bbc811-68b5-4794-b83a-748c78115a66',
-    secret_key='2A9D8CF207CE746732111304DBCBB447961C2269C1A452EBD53F355893EF0E45',
-)
+WEBPUSH_SETTINGS = {
+    "VAPID_PUBLIC_KEY": "BH2Qfo0zQTXbPIa6ImMTv2kNfFdbgq2gPPDUdG-olPis4Z4cU3rYNrBcdeogszrUtxTQei1ozUVGvPVD5xDC64Y",
+    "VAPID_PRIVATE_KEY": "KIqDC4VngQ1Ns95MQKrAcWVjlTd8JmOoO84giOHajYw",
+    "VAPID_ADMIN_EMAIL": "alejocoraizaca@gmail.com"
+}

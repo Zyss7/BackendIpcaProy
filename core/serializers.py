@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ALL_FIELDS
 
-from core.models import Tarea, Personal, Persona, Aula, Alumno, Discapacidad, ListaReproduccion, PeriodoLectivo
+from core.models import Tarea, Personal, Persona, Aula, Alumno, Discapacidad, ListaReproduccion, PeriodoLectivo, Usuario
 
 
 class TareaSerializer(serializers.ModelSerializer):
@@ -22,7 +22,6 @@ class TareaAlumnoSerializer(serializers.ModelSerializer):
         identificacion = ''
 
     def get_estado(self, obj: Tarea):
-        print(self)
         return 'PENDIENTE'
 
     def get_show(self, obj: Tarea):
@@ -39,16 +38,23 @@ class PersonaSerializer(serializers.ModelSerializer):
     # discapacidades = DiscapacidadSerializer(many=True)
     discapacidades = serializers.SerializerMethodField()
     str = serializers.SerializerMethodField()
+    usuario = serializers.SerializerMethodField()
 
     class Meta:
         model = Persona
         fields = ALL_FIELDS
 
     def get_discapacidades(self, obj: Persona):
-        return [discapacidad.nombre for discapacidad in obj.discapacidades.all()]
+        return obj.discapacidades.values_list('nombre', flat=True).all()
 
     def get_str(self, obj: Persona):
         return obj.__str__()
+
+    def get_usuario(self, obj: Persona):
+        usuario = Usuario.objects.values('username', ).filter(
+            persona__identificacion=obj.identificacion
+        ).first()
+        return usuario
 
 
 class AulaSerializer(serializers.ModelSerializer):
@@ -83,3 +89,12 @@ class ListaReproduccionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListaReproduccion
         fields = ALL_FIELDS
+
+
+class UsuarioSerializaer(serializers.ModelSerializer):
+    persona = PersonaSerializer()
+
+    class Meta:
+        model = Usuario
+        # fields = ALL_FIELDS
+        exclude = ('password',)
