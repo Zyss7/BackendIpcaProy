@@ -1,9 +1,13 @@
+import json
+
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from pywebpush import WebPushException, webpush
+from webpush.models import PushInformation
 from webpush.utils import _process_subscription_info
 
 from BackendIpcaProy.responses import CustomResponse
-from core.models import Alumno, Personal, FuncionPersonal
+from core.models import Alumno, Personal, FuncionPersonal, Usuario
 from core.serializers import AlumnoSerializer, DocenteSerializer
 
 
@@ -122,3 +126,30 @@ def send_notification(subscription, payload, ttl):
         else:
             # Its other type of exception!
             raise e
+
+
+def notificar_tarea_enviada(head, body, id_usuario):
+    try:
+
+        # if 'head' not in data or 'body' not in data or 'id' not in data:
+        #     return JsonResponse(status=400, data={"message": "Invalid data format"})
+
+        # user_id = data['id']
+        user = get_object_or_404(Usuario, pk=id_usuario)
+        payload = {
+            'head': head,
+            'body': body,
+            # 'icon': data.get('icon', None),
+            # 'url': data.get('url', None)
+        }
+        push_info = PushInformation.objects.filter(
+            user=user,
+            group__name="MLN"
+        ).first()
+        payload = json.dumps(payload)
+        send_notification(subscription=push_info.subscription, payload=payload, ttl=1000)
+        return True
+        # return Response({"message": "Web push successful"})
+    except Exception as e:
+        return False
+        # return Response({"message": "An error occurred"})

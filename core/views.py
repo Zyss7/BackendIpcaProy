@@ -14,9 +14,8 @@ from rest_framework.response import Response
 from webpush.models import PushInformation, Group, SubscriptionInfo
 
 from BackendIpcaProy.responses import CustomResponse, is_authenticated
-
 from core.models import Tarea, Personal, Alumno, ListaReproduccion, AUTH_ESTADOS, Usuario
-from core.queries import is_docente_or_alumno, get_model_by, UsuarioQueries, send_notification
+from core.queries import is_docente_or_alumno, get_model_by, UsuarioQueries, send_notification, notificar_tarea_enviada
 from core.serializers import TareaSerializer, ListaReproduccionSerializer
 
 
@@ -43,6 +42,16 @@ def tarea_by_id(request: Request, id, *args, **kwargs):
     serialized_tarea = TareaSerializer(tarea)
     tarea = serialized_tarea.update(tarea, request.data)
     tarea.save()
+    if tarea.estado_envio == "ENVIADO" and tarea.alumnos is not None:
+        for alumno in tarea.alumnos:
+            id_usuario = alumno.get('id', None)
+            if id_usuario is not None:
+                notificar_tarea_enviada(
+                    head="NUEVA TAREA",
+                    body=f'Tu docente "{tarea.docente.get("str")}"',
+                    id_usuario=alumno.get('id', None)
+                )
+
     return CustomResponse.success(TareaSerializer(tarea).data)
 
 
