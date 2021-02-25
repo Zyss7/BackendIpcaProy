@@ -108,7 +108,7 @@ def delete_tarea(request: Request, id: int, *args, **kwargs):
 
 @api_view(['POST'])
 @is_authenticated
-def crear_lista_reproduccion(request: Request):
+def crear_lista_reproduccion(request: Request, *args, **kwargs):
     lista_serializer = ListaReproduccionSerializer(data=request.data)
     if lista_serializer.is_valid():
         lista = lista_serializer.create(request.data)
