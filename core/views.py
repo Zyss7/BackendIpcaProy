@@ -45,14 +45,11 @@ def tarea_by_id(request: Request, id, *args, **kwargs):
     if tarea.estado_envio == "ENVIADO" and tarea.alumnos is not None:
         for alumno in tarea.alumnos:
             usuario = Usuario.objects.filter(persona__id=alumno.get('id_persona')).first()
-
-            print('ALUMNO', usuario.pk)
-       
             notificar_tarea_enviada(
-                    head="NUEVA TAREA",
-                    body=f'Tu docente "{tarea.docente.get("str")}"',
-                    id_usuario=usuario.pk
-                )
+                head="NUEVA TAREA",
+                body=f'Tu docente "{tarea.docente.get("str")}"',
+                id_usuario=usuario.pk
+            )
 
     return CustomResponse.success(TareaSerializer(tarea).data)
 
