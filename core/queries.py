@@ -148,8 +148,10 @@ def notificar_tarea_enviada(head, body, id_usuario):
         ).first()
         payload = json.dumps(payload)
         send_notification(subscription=push_info.subscription, payload=payload, ttl=1000)
+        print('ENVIADA CORRECTAMENTE')
         return True
         # return Response({"message": "Web push successful"})
     except Exception as e:
+        print(e)
         return False
         # return Response({"message": "An error occurred"})
