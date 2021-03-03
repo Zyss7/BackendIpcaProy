@@ -21,6 +21,7 @@ class CustomResponse:
 
 
 def is_authenticated(view_function):
+    from core.queries import is_docente_or_alumno
     def decorated_function(request, *args, **kwargs):
         # validate token existence
 
@@ -34,8 +35,8 @@ def is_authenticated(view_function):
 
         identificacion = request.headers.get('Authorization')
         kwargs = {**kwargs, 'identificacion': identificacion}
-        print(kwargs)
-        return view_function(request, *args, **kwargs)
+        data = is_docente_or_alumno(identificacion)
+        return view_function(request, *args, **kwargs, **data)
         # if validated_token:
         #     return view_function(request, *args, **kwargs)
 

@@ -32,7 +32,7 @@ def create_tarea(request: Request, *args, **kwargs):
 
 @api_view(['GET', 'PUT'])
 @is_authenticated
-def tarea_by_id(request: Request, id, *args, **kwargs):
+def tarea_by_id(request: Request, id, is_docente, *args, **kwargs):
     if request.method == 'GET':
         tarea = Tarea.objects.filter(pk=id).first()
         tarea_serialized = TareaSerializer(tarea)
@@ -42,14 +42,15 @@ def tarea_by_id(request: Request, id, *args, **kwargs):
     serialized_tarea = TareaSerializer(tarea)
     tarea = serialized_tarea.update(tarea, request.data)
     tarea.save()
-    if tarea.estado_envio == "ENVIADO" and tarea.alumnos is not None:
-        for alumno in tarea.alumnos:
-            usuario = Usuario.objects.filter(persona__id=alumno.get('id_persona')).first()
-            notificar_tarea_enviada(
-                head="NUEVA TAREA",
-                body=f'Tu docente "{tarea.docente.get("str")}"',
-                id_usuario=usuario.pk
-            )
+    if is_docente:
+        if tarea.estado_envio == "ENVIADO" and tarea.alumnos is not None:
+            for alumno in tarea.alumnos:
+                usuario = Usuario.objects.filter(persona__id=alumno.get('id_persona')).first()
+                notificar_tarea_enviada(
+                    head="NUEVA TAREA",
+                    body=f'Tu docente "{tarea.docente.get("str")}"',
+                    id_usuario=usuario.pk
+                )
 
     return CustomResponse.success(TareaSerializer(tarea).data)
 

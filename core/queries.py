@@ -33,11 +33,14 @@ def is_docente_or_alumno(identificacion, error_msg="NO SE HAN ENCONTRADO RESULTA
             message=error_msg,
             response_error=CustomResponse.error(error_msg)
         )
-
+    is_alumno = False
+    is_docente = False
     if alumno is not None:
-        return dict(rol="ALUMNO", data=alumno)
+        is_alumno = True
+        return dict(rol="ALUMNO", data=alumno, is_alumno=is_alumno, is_docente=is_docente)
 
-    return dict(rol="DOCENTE", data=docente)
+    is_docente = True
+    return dict(rol="DOCENTE", data=docente, is_alumno=is_alumno, is_docente=is_docente)
 
 
 def is_valid_user(identificacion):
